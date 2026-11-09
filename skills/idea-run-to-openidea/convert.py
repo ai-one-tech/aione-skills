@@ -5,8 +5,8 @@
 - .openidea/run.toml 不存在时自动创建（与 .run 同级）
 - JRE 优先级: --jre > run.xml 的 ALTERNATIVE_JRE_PATH > .idea/misc.xml 项目 SDK(经 jdk.table.xml) > 留空
 - 已存在同名配置会跳过，不覆盖用户手建的条目
-- envFilePaths 指向的 env 文件会被读取，内容内联到 env 表（OpenIDEA 不支持引用 env 文件）
-- run.xml 中手动设置的单项环境变量（<envs><env/>）也会转换，同名时覆盖 env 文件中的值（与 IDEA 一致）
+- envFilePaths 指向的 env 文件以绝对路径写入 env-files（OpenIDEA 原生支持，不再内联内容）
+- run.xml 中手动设置的单项环境变量（<envs><env/>）写入 env 表
 - env 取值只写入文件，不打印
 """
 import argparse
@@ -22,16 +22,6 @@ SECRET = re.compile(r"(PASSWORD|SECRET|TOKEN|KEY)", re.I)
 
 def esc(s):
     return s.replace("\\", "\\\\").replace('"', '\\"')
-
-
-def read_env(path):
-    env = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            env[k.strip()] = v.strip().strip("\"'")
-    return env
 
 
 def load_jdk_table():
@@ -80,19 +70,17 @@ def parse_run_xml(xml_path, project):
     if cfg is None or cfg.get("type") != "SpringBootApplicationConfigurationType":
         return None
     opt = lambda n: next((o.get("value") for o in cfg.findall("option") if o.get("name") == n), None)
-    env = {}
+    env_files = []
     for o in cfg.findall("./option[@name='envFilePaths']/option"):
         p = o.get("value").replace("$PROJECT_DIR$", str(project))
         env_file = Path(p).resolve()
         if not env_file.is_file():
             sys.exit(f"env 文件不存在: {env_file} (来自 {xml_path.name})")
-        env.update(read_env(env_file))
-    # 手动设置的单项环境变量；IDEA 中优先级高于 env 文件，故后写入覆盖
-    manual = {}
+        env_files.append(str(env_file))
+    env = {}
     for e in cfg.findall("./envs/env"):
         if e.get("name"):
-            manual[e.get("name")] = (e.get("value") or "").replace("$PROJECT_DIR$", str(project))
-    env.update(manual)
+            env[e.get("name")] = (e.get("value") or "").replace("$PROJECT_DIR$", str(project))
     module = cfg.find("module")
     return {
         "name": cfg.get("name"),
@@ -103,7 +91,7 @@ def parse_run_xml(xml_path, project):
         "args": opt("PROGRAM_PARAMETERS") or "",
         "alt_jre": opt("ALTERNATIVE_JRE_PATH") if opt("ALTERNATIVE_JRE_PATH_ENABLED") == "true" else None,
         "env": env,
-        "env_manual": sorted(manual),
+        "env_files": env_files,
     }
 
 
@@ -115,6 +103,8 @@ def render(c, jre):
     args.extend(shlex.split(c["args"]))
     arglist = ", ".join(f'"{esc(a)}"' for a in args)
     envs = ", ".join(f'{k} = "{esc(v)}"' for k, v in sorted(c["env"].items()))
+    env_files = ", ".join(f'"{esc(f)}"' for f in c["env_files"])
+    env_files_line = f"env-files = [{env_files}]\n" if env_files else ""
     cid = "user:" + hashlib.md5(c["name"].encode()).hexdigest()[:9]
     return f'''
 [[configurations]]
@@ -127,7 +117,7 @@ module = "{c['module']}"
 env = {{ {envs} }}
 debug-adapter = "java-debug"
 params = {{ activeProfiles = "{esc(c['profile'])}", classpath = "{cp}", jre = "{jre}", mainClass = "{c['main']}", module = "{c['module']}", programArgs = "{esc(c['args'])}", vmOptions = "{esc(c['vm'])}" }}
-'''
+{env_files_line}'''
 
 
 def main():
@@ -166,7 +156,7 @@ def main():
             jre, src = "", "未找到,留空"
         out += render(c, jre)
         secrets = [k for k in c["env"] if SECRET.search(k)]
-        report.append(f"转换: {c['name']} profile={c['profile']} jre={jre or '(空)'}[{src}] env键={sorted(c['env'])}(其中手动设置: {c['env_manual']}) 含敏感键={secrets}")
+        report.append(f"转换: {c['name']} profile={c['profile']} jre={jre or '(空)'}[{src}] env键={sorted(c['env'])} env-files={c['env_files']} 含敏感键={secrets}")
 
     print("\n".join(report) or "没有可转换的配置")
     if out and not target.exists():

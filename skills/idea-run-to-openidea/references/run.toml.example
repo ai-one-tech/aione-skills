@@ -25,6 +25,7 @@ module = "demo-server"
 env = { AUTH_SKIP = "true", SIGNATURE_SECRET = "mock-signature-secret-1111", CUSTOMER_NAME = "local-dev", NACOS_HOST = "10.0.0.10", NACOS_NS = "00000000-0000-0000-0000-000000000001", NACOS_PASSWORD = "mock-nacos-password", NACOS_PORT = "8848", NACOS_USERNAME = "u_local" }
 debug-adapter = "java-debug"
 params = { activeProfiles = "local-uat", classpath = "${classpath}", jre = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8", mainClass = "com.example.demo.DemoApplication", module = "demo-server", programArgs = "", vmOptions = "-XX:-UseContainerSupport" }
+env-files = ["/source/test.env"]
 
 # 连接生产环境的配置示例（profile = prod）
 [[configurations]]

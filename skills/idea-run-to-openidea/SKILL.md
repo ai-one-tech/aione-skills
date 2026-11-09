@@ -5,7 +5,7 @@ description: 把 IntelliJ IDEA 的 Spring Boot 启动配置（.run/*.run.xml）�
 
 # IDEA 启动配置 → OpenIDEA run.toml
 
-OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/run.toml`；且**不支持引用 env 文件**，必须把 env 内容内联进 toml。
+OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/run.toml`；env 文件通过 `env-files = ["/abs/path.env"]` 直接引用，不再内联内容。
 
 ## 步骤
 
@@ -25,7 +25,7 @@ OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/r
    输出只列配置名、profile、JRE 路径及来源、env 键名和是否含敏感键，不打印 env 取值。run.toml 不存在时会提示将新建。
 4. **执行**：去掉 `--dry-run`；可用 `--only "名称"` 限定。同名配置会跳过，不覆盖用户手建的条目。
 5. **提醒用户**（每次必说）：
-   - run.toml 内联了 Nacos 密码等敏感值，`.openidea/.gitignore` 默认不忽略它，建议加 `/run.toml`。
+   - run.toml 的 `env` 可能含手动设置的敏感值，且 `env-files` 写的是本机绝对路径，`.openidea/.gitignore` 默认不忽略它，建议加 `/run.toml`。
    - 带 prod 的配置会连生产环境，转换前要用户明确要求。
    - XML 里的 profile 与用户手建示例不一致时，以用户手建的为准，并告知差异。
 
@@ -37,8 +37,8 @@ OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/r
 | `ACTIVE_PROFILES` | `args` 里的 `--spring.profiles.active=`、`params.activeProfiles` |
 | `SPRING_BOOT_MAIN_CLASS` | `args` 中主类、`params.mainClass` |
 | `module name` | `module`、`params.module` |
-| `envFilePaths`（读取文件内容） | `env = { K = "V" }` |
-| `<envs><env name value/>`（手动单项变量） | 合并进同一个 `env`，同名时覆盖 env 文件的值 |
+| `envFilePaths`（env 文件引用） | `env-files = ["<绝对路径>"]`（不读取文件内容） |
+| `<envs><env name value/>`（手动单项变量） | `env = { K = "V" }` |
 | `VM_PARAMETERS` / `PROGRAM_PARAMETERS` | `params.vmOptions` / `params.programArgs`；同时拆分后放进 `args`（VM 参数在 `-cp` 之前，程序参数在末尾） |
 
 固定值：`kind = "spring-boot"`、`debug-adapter = "java-debug"`、`classpath = "${classpath}"`、`command = <JAVA_HOME>/bin/java`（JAVA_HOME 为空时 `command` 也留空）；`id` 由配置名哈希生成（`user:` + 9 位）。
