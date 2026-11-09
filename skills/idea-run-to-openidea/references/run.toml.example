@@ -1,0 +1,39 @@
+# OpenIDEA run.toml 格式示例（全部为 mock 数据，已脱敏）
+# 实际文件位置：<项目根>/.openidea/run.toml（与 .run 目录同级）
+# 注意：OpenIDEA 对未知/错误字段是静默忽略，字段名不要改。
+
+# 由 OpenIDEA 自动识别的 Spring Boot 配置：id 形如 application:<module>:<mainClass>
+[[configurations]]
+id = "application:demo-server:com.example.demo.DemoApplication"
+name = "local-uat"
+kind = "spring-boot"
+command = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8/bin/java"
+args = ["-XX:-UseContainerSupport", "-cp", "${classpath}", "com.example.demo.DemoApplication", "--spring.profiles.active=local-uat"]
+module = "demo-server"
+env = { AUTH_SKIP = "true", SIGNATURE_SECRET = "mock-signature-secret-0000" }
+debug-adapter = "java-debug"
+params = { activeProfiles = "local-uat", jre = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8", classpath = "${classpath}", mainClass = "com.example.demo.DemoApplication", module = "demo-server", programArgs = "", vmOptions = "-XX:-UseContainerSupport" }
+
+# 用户手建/脚本转换的配置：id 形如 user:<9位哈希>；env 为内联的环境变量（含 Nacos 等连接信息）
+[[configurations]]
+id = "user:a1b2c3d4e"
+name = "demo local(customer-a)"
+kind = "spring-boot"
+command = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8/bin/java"
+args = ["-XX:-UseContainerSupport", "-cp", "${classpath}", "com.example.demo.DemoApplication", "--spring.profiles.active=local-uat"]
+module = "demo-server"
+env = { AUTH_SKIP = "true", SIGNATURE_SECRET = "mock-signature-secret-1111", CUSTOMER_NAME = "local-dev", NACOS_HOST = "10.0.0.10", NACOS_NS = "00000000-0000-0000-0000-000000000001", NACOS_PASSWORD = "mock-nacos-password", NACOS_PORT = "8848", NACOS_USERNAME = "u_local" }
+debug-adapter = "java-debug"
+params = { activeProfiles = "local-uat", classpath = "${classpath}", jre = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8", mainClass = "com.example.demo.DemoApplication", module = "demo-server", programArgs = "", vmOptions = "-XX:-UseContainerSupport" }
+
+# 连接生产环境的配置示例（profile = prod）
+[[configurations]]
+id = "user:f9e8d7c6b"
+name = "demo prod(customer-a)"
+kind = "spring-boot"
+command = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8/bin/java"
+args = ["-XX:-UseContainerSupport", "-cp", "${classpath}", "com.example.demo.DemoApplication", "--spring.profiles.active=prod"]
+module = "demo-server"
+env = { SIGNATURE_SECRET = "mock-signature-secret-2222", CUSTOMER_NAME = "prod", NACOS_HOST = "10.0.0.10", NACOS_NS = "00000000-0000-0000-0000-000000000002", NACOS_PASSWORD = "mock-nacos-password", NACOS_PORT = "8848", NACOS_USERNAME = "u_prod" }
+debug-adapter = "java-debug"
+params = { activeProfiles = "prod", classpath = "${classpath}", jre = "/home/dev/.vfox/cache/java/v-17.0.2+8/java-17.0.2+8", mainClass = "com.example.demo.DemoApplication", module = "demo-server", programArgs = "", vmOptions = "-XX:-UseContainerSupport" }
