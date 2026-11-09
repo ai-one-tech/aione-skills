@@ -6,6 +6,7 @@
 - JRE 优先级: --jre > run.xml 的 ALTERNATIVE_JRE_PATH > .idea/misc.xml 项目 SDK(经 jdk.table.xml) > 留空
 - 已存在同名配置会跳过，不覆盖用户手建的条目
 - envFilePaths 指向的 env 文件会被读取，内容内联到 env 表（OpenIDEA 不支持引用 env 文件）
+- run.xml 中手动设置的单项环境变量（<envs><env/>）也会转换，同名时覆盖 env 文件中的值（与 IDEA 一致）
 - env 取值只写入文件，不打印
 """
 import argparse
@@ -86,6 +87,12 @@ def parse_run_xml(xml_path, project):
         if not env_file.is_file():
             sys.exit(f"env 文件不存在: {env_file} (来自 {xml_path.name})")
         env.update(read_env(env_file))
+    # 手动设置的单项环境变量；IDEA 中优先级高于 env 文件，故后写入覆盖
+    manual = {}
+    for e in cfg.findall("./envs/env"):
+        if e.get("name"):
+            manual[e.get("name")] = (e.get("value") or "").replace("$PROJECT_DIR$", str(project))
+    env.update(manual)
     module = cfg.find("module")
     return {
         "name": cfg.get("name"),
@@ -96,6 +103,7 @@ def parse_run_xml(xml_path, project):
         "args": opt("PROGRAM_PARAMETERS") or "",
         "alt_jre": opt("ALTERNATIVE_JRE_PATH") if opt("ALTERNATIVE_JRE_PATH_ENABLED") == "true" else None,
         "env": env,
+        "env_manual": sorted(manual),
     }
 
 
@@ -158,7 +166,7 @@ def main():
             jre, src = "", "未找到,留空"
         out += render(c, jre)
         secrets = [k for k in c["env"] if SECRET.search(k)]
-        report.append(f"转换: {c['name']} profile={c['profile']} jre={jre or '(空)'}[{src}] env键={sorted(c['env'])} 含敏感键={secrets}")
+        report.append(f"转换: {c['name']} profile={c['profile']} jre={jre or '(空)'}[{src}] env键={sorted(c['env'])}(其中手动设置: {c['env_manual']}) 含敏感键={secrets}")
 
     print("\n".join(report) or "没有可转换的配置")
     if out and not target.exists():

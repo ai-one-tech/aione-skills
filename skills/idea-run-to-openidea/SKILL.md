@@ -38,6 +38,7 @@ OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/r
 | `SPRING_BOOT_MAIN_CLASS` | `args` 中主类、`params.mainClass` |
 | `module name` | `module`、`params.module` |
 | `envFilePaths`（读取文件内容） | `env = { K = "V" }` |
+| `<envs><env name value/>`（手动单项变量） | 合并进同一个 `env`，同名时覆盖 env 文件的值 |
 | `VM_PARAMETERS` / `PROGRAM_PARAMETERS` | `params.vmOptions` / `params.programArgs`；同时拆分后放进 `args`（VM 参数在 `-cp` 之前，程序参数在末尾） |
 
 固定值：`kind = "spring-boot"`、`debug-adapter = "java-debug"`、`classpath = "${classpath}"`、`command = <JAVA_HOME>/bin/java`（JAVA_HOME 为空时 `command` 也留空）；`id` 由配置名哈希生成（`user:` + 9 位）。
