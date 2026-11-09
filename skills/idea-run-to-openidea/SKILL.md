@@ -13,7 +13,7 @@ OpenIDEA 不读 `.idea/workspace.xml` 和 `.run/*.run.xml`，只读 `.openidea/r
 2. **确认 JAVA_HOME**：取示例里 `params.jre` 的值（不要自己猜路径）。
 3. **预览**：
    ```
-   python3 -I .claude/skills/idea-run-to-openidea/convert.py --project <项目根> --jre <JAVA_HOME> --dry-run
+   python3 -I ~/.claude/skills/idea-run-to-openidea/convert.py --project <项目根> --jre <JAVA_HOME> --dry-run
    ```
    输出只列配置名、profile、env 键名和是否含敏感键，不打印取值。
 4. **执行**：去掉 `--dry-run`；可用 `--only "名称"` 限定。同名配置会跳过，不覆盖用户手建的条目。
